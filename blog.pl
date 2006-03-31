@@ -8,42 +8,48 @@ use File::Find::Rule;
 use Inline TT => 'DATA';
 
 my $conf = {
-	title    => 'Whatever Blog',
+	title    => 'Blog',
 	data_dir => '/home/dmo/.blog/entries',
 	timezone => 'Canada/Eastern',
-	url_base => $ENV{SCRIPT_NAME}
+	url_base => script_name(),
 };
 
 my $articles = Article->list( $conf );
 
-my $articlekey;
-if( exists $ENV{PATH_INFO} ) {
-	if( $ENV{PATH_INFO} =~ m!/(\d{14})$! ) {
-		$articlekey = $1;
-	} elsif ( $ENV{PATH_INFO} =~ m!/blog.css$!) {
+my @article_keys = keys %$articles;
+my $extra_title = '';
+
+for( path_info() ) {
+	m!/(\d{14})$! && do {
+		my $key = $1;
+		if( exists $articles->{$key} ) {
+			@article_keys = ( $key );
+			$extra_title = $articles->{$key}->{subject};
+		}
+		last;
+	};
+	m!/blog.css$! && do {
 		print header('text/css');
-		print stylesheet();
+		print stylesheet({});
 		exit(0);
-	}
+	};
 }
 
-my $extra_title = '';
-if( defined $articlekey && exists $articles->{$articlekey} ) {
-	$extra_title = $articles->{$articlekey}->{subject};
-}
 
 print header,
-	top({ conf => $conf,  article_title => $extra_title}),
-	sidebar({ conf => $conf, articles => [ values %$articles ] });
-
-if( $articlekey ) {
-	my $art = $articles->{$articlekey};
-	print article({ conf => $conf, article => $art });
-} else {
-	print articles({ conf => $conf, articles => [ values %$articles ] });
-}
-
-print bottom();
+	top({ 
+		conf => $conf,
+		article_title => $extra_title
+	}),
+	sidebar({ 
+		conf => $conf, 
+		articles => [ map { $articles->{$_} } reverse sort keys %$articles ]
+	}),
+	articles({ 
+		conf => $conf, 
+		articles => [ map { $articles->{$_} } reverse sort @article_keys ]
+	}),
+	bottom({});
 
 exit(0);
 
@@ -55,10 +61,6 @@ use Text::Markdown 'markdown';
 sub new 
 {
 	my ($class, $args) = @_;
-
-	if( ! -r $args->{filename} ) {
-		die 'Unreadable file ' . $args->{filename};		
-	}
 
 	$args->{key}   = basename( $args->{filename} );
 
@@ -94,7 +96,7 @@ sub load
 
 	my $date = DateTime->from_epoch( epoch => (stat($self->{filename}))[9]);
 	$date->set_time_zone( $conf->{timezone} );
-	$self->{mtime} = $date->strftime('%a, %d  %b  %Y  %H:%M:%S  %z');
+	$self->{mtime} = $date->epoch;
 
 	if( ! exists $self->{'content-type'} ) {
 		if( $self->{body} =~ /^</ ) {
@@ -128,27 +130,21 @@ sub list
 		$find->mtime( '<=' . DateTime->now->epoch);
 	}
 
-	my %articles = map { $_->{key} => $_ } map { $class->new({filename => $_}) } $find->in( $args->{data_dir});
-	return \%articles;
+	return { map { my $a = $class->new({filename => $_}); ($a->{key}, $a) } $find->in( $args->{data_dir}) };
 }
 
 sub formatted_body 
 {
 	my ($self) = @_;
+	my $formats = { 
+		'text/plain'      => sub { return "<pre>$_[0]</pre>" },
+		'text/html'       => sub { return $_[0] },
+		'text/x-markdown' => sub { return markdown($_[0]) },
+	};
 
-	for ($self->{'content-type'}) {
-		m{^text/plain$}  && do {
-			return '<pre>' . $self->{body} . '</pre>';
-		};
-		m{^text/html$}  && do {
-			return $self->{body};
-		};
-		m{^text/x-markdown$}  && do {
-			return markdown($self->{body});
-		};
-	}
+	return $formats->{$self->{'content-type'}}->($self->{body})
+	    if exists $formats->{$self->{'content-type'}};
 }
-
 
 package main;
 
@@ -163,62 +159,102 @@ __TT__
     <link rel="stylesheet" type="text/css" media="all" href="[% conf.url_base %]/blog.css" />
   </head>
   <body>
-    <h1>[% article_title or conf.title %]</h1>
-    <table border=0 cellspacing="0" cellpadding="0" width="100%">
-    <tr>
-     <td valign=top width="20%">
-     <table border=1 cellspacing="0" cellpadding="10" width="100%">
-     <tr><td>
+    <h1><a href="[% conf.url_base %]">[% conf.title %]</a></h1>
 [% END %]
 
 [% BLOCK bottom %]
-    </td>
-    </tr>
-    </table>
+<p>
+<a href="http://validator.w3.org/check?uri=referer"><img
+      src="http://www.w3.org/Icons/valid-xhtml10"
+      alt="Valid XHTML 1.0 Transitional" height="31" width="88" border="0"/></a>
+</p>
   </body>
 </html>
 [% END %]
 
 
 [% BLOCK article %]
-<table border=1 cellspacing="0" cellpadding="10" width="100%">
-<tr><td>
-  <table border=0 cellspacing="0" cellpadding="0" width="100%">
-    <tr>
-      <td><b><font color=purple size=+1>[% article.subject %]</font></b></td>
-      <td align=right>[ link: <font color=lightgray><a href='[% conf.url_base %]/[% article.key %]'>[% article.key %]</a></font> | updated: [% article.mtime %] ]</td>
-    </tr>
-  </table>
-</td></tr>
-<tr><td>
+[% USE date %]
+<div class='article'>
+  <h2>[% article.subject %]</h2>
+  <h4> [ link: <a href='[% conf.url_base %]/[% article.key %]'>[% article.key %]</a> | updated: [% date.format(article.mtime, '%a, %d  %b  %Y  %H:%M:%S  %z') %] ]</h4>
+  <div class='article_body'>
 	[% article.formatted_body ? article.formatted_body : article.body %]
-</td></tr>
-</table>
-<br />
+  </div>
+</div>
 [% END %]
 
 [% BLOCK articles %]
+<div class="content">
 [% FOREACH article = articles %]
 [% PROCESS article %]
 [% END %]
+</div>
 [% END %]
 
 [% BLOCK sidebar %]
-<a href=/>dmo.ca</a> / <a href='/blog'>blog</a> <br><br>
+<div id="sidebar">
 [% FOREACH article = articles %]
-[ <a href="[% conf.url_base %]/[% article.key %]">[% article.key %]</a> ]<br />[% article.subject %]<br>
-<br>
+[ <a href="[% conf.url_base %]/[% article.key %]">[% article.key %]</a> ]<br />[% article.subject %]<br />
+<br />
 [% END %]
-</tr></td>
-</table>
-</td>
-<td width=10>
-</td>
-<td valign=top>
+</div>
 [% END %]
 
 [% BLOCK stylesheet %]
-h1 { 	
-	font-family: "Trebuchet MS", Geneva, Arial, Helvetica, SunSans-Regular, Verdana, sans-serif;
+body { 
+	color: black;
+	background: white;
+	font-size: 10pt;
+	padding-left: 6%;
+	padding-right: 6%;
 }
+
+h1, h2 { 
+	font-family: lucida, verdana, helvetica, arial, sans-serif;
+	font-style: normal;
+	font-variant: normal;
+	font-weight: bolder;
+}
+
+h1 {
+	color: #039;
+}
+
+h1 a {
+	text-decoration: none;
+	color: #039;
+}
+
+h2 {
+	border-bottom: 1px solid black; 
+	border-top: 1px solid black;
+	background-color: #ffffcc;
+	margin-bottom: 0;
+}
+
+h4 {
+	margin-top: 0;
+	font-size: 10pt;
+	font-weight: normal;
+	background-color: #ffffee;
+	text-align: right;
+}
+
+.content {
+	margin-left: 200px;
+}
+
+.article_body {
+	padding-left: 20px;
+}
+
+#sidebar {
+	float: left;
+	width: 160px;
+	margin: 0;
+	padding: 1em;
+}
+
+
 [% END %]
