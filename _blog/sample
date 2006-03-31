@@ -1,0 +1,6 @@
+Subject: subject
+Content-Type: text/plain
+
+body can contain html if the first non space char is a < or if 
+Content-Type is 'text/html
+

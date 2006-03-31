@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+BLOG="$HOME/.blog"
+ENTR="$BLOG/entries"
+
+DATE=`date +"%Y%m%d%H%M%S"`
+FILE="$ENTR/$DATE"
+
+cp "$BLOG/template" "$FILE"
+chmod 600 "$FILE"
+vim "$FILE"
+chmod 644 "$FILE"
+
