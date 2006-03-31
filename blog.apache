@@ -1,0 +1,10 @@
+# Add this file to your /etc/apache/conf.d/ directory
+# to have "nice" URLs for your blog script.  Don't forget to change the
+# Directory and ScriptAliasMatch lines!
+<Directory "/var/www/dmo.ca">
+	<FilesMatch "blog.pl$">
+		Options ExecCGI
+  	</FilesMatch>
+</Directory>
+
+ScriptAliasMatch ^/blog/?(.*) /var/www/dmo.ca/blog.pl/$1
