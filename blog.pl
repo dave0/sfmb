@@ -12,22 +12,23 @@ my $conf = {
 	data_dir => '/home/dmo/.blog/entries',
 	timezone => 'Canada/Eastern',
 	url_base => script_name(),
+	host_name => virtual_host(),
+	
+	meta      => {
+
+		# See http://geourl.org/
+		ICBM => '45.36642,-75.74261',
+		
+		# See http://geotags.com/
+		geo  => {
+			region    => 'CA.ON',
+			placename => 'Ottawa',
+		},
+	}
 };
 
-my $articles = Article->list( $conf );
-
-my @article_keys = keys %$articles;
-my $extra_title = '';
-
+# Check for CSS first before reading article files
 for( path_info() ) {
-	m!/(\d{14})$! && do {
-		my $key = $1;
-		if( exists $articles->{$key} ) {
-			@article_keys = ( $key );
-			$extra_title = $articles->{$key}->{subject};
-		}
-		last;
-	};
 	m!/blog.css$! && do {
 		print header('text/css');
 		print stylesheet({});
@@ -36,10 +37,31 @@ for( path_info() ) {
 }
 
 
+my $articles = Article->list( $conf );
+my @article_keys = reverse sort keys %$articles;
+
+for( path_info() ) {
+	m!/(\d{14})$! && do {
+		my $key = $1;
+		if( exists $articles->{$key} ) {
+			@article_keys = ( $key );
+		}
+		last;
+	};
+	m!/feed.xml$! && do {
+		print header('application/rss+xml'),
+		      xml_articles({ 
+				conf => $conf, 
+				articles => [ map { $articles->{$_} } @article_keys ]
+		});
+		exit(0);
+	};
+}
+
 print header,
 	top({ 
 		conf => $conf,
-		article_title => $extra_title
+		article_title => $articles->{ $article_keys[0] }->{subject}
 	}),
 	sidebar({ 
 		conf => $conf, 
@@ -47,7 +69,7 @@ print header,
 	}),
 	articles({ 
 		conf => $conf, 
-		articles => [ map { $articles->{$_} } reverse sort @article_keys ]
+		articles => [ map { $articles->{$_} } @article_keys ]
 	}),
 	bottom({});
 
@@ -156,6 +178,10 @@ __TT__
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <head>
     <title>[% article_title ? article_title : conf.title %]</title>
+    <meta name="ICBM" content="[% conf.meta.ICBM %]" /> 
+    <meta name="geo.region" content="[% conf.meta.geo.region %]" /> 
+    <meta name="geo.placename" content="[% conf.meta.geo.placename %]" /> 
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="[% conf.url_base %]/feed.xml" /> 
     <link rel="stylesheet" type="text/css" media="all" href="[% conf.url_base %]/blog.css" />
   </head>
   <body>
@@ -163,11 +189,6 @@ __TT__
 [% END %]
 
 [% BLOCK bottom %]
-<p>
-<a href="http://validator.w3.org/check?uri=referer"><img
-      src="http://www.w3.org/Icons/valid-xhtml10"
-      alt="Valid XHTML 1.0 Transitional" height="31" width="88" border="0"/></a>
-</p>
   </body>
 </html>
 [% END %]
@@ -198,6 +219,16 @@ __TT__
 [ <a href="[% conf.url_base %]/[% article.key %]">[% article.key %]</a> ]<br />[% article.subject %]<br />
 <br />
 [% END %]
+<p>
+<a href="http://validator.w3.org/check?uri=referer"><img
+      src="http://www.w3.org/Icons/valid-xhtml10"
+      alt="Valid XHTML 1.0 Transitional" height="31" width="88" border="0"/></a>
+</p>
+<p>
+<a href="http://www.vim.org"><img
+      src="/images/vim/vim_created.gif"
+      alt="Created with Vim" height="36" width="90" border="0"/></a>
+</p>
 </div>
 [% END %]
 
@@ -257,4 +288,28 @@ h4 {
 }
 
 
+[% END %]
+
+[% BLOCK xml_articles %]
+[% USE date %]
+<rss version="0.92" xml:base="[% conf.url_base %]">
+  <channel>
+    <title>[% conf.title %]</title>
+    <link>http://[% conf.host_name %][% conf.url_base %]</link>
+    <description></description>
+    <language>en</language>
+
+    [% FOREACH item = articles %]
+    <item>
+      <title>[% item.subject %]</title>
+      <link>http://[% conf.host_name %][% conf.url_base %]/[% item.key %]</link>
+      <description>
+	<![CDATA[ [% item.formatted_body ? item.formatted_body : item.body %]
+      ]]></description>
+      <pubDate>[% date.format(item.mtime, '%a, %d  %b  %Y  %H:%M:%S  %Z') %]</pubDate>
+    </item>
+    
+    [% END %]
+  </channel>
+</rss>
 [% END %]
