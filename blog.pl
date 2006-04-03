@@ -216,8 +216,9 @@ __TT__
 [% BLOCK sidebar %]
 <div id="sidebar">
 [% FOREACH article = articles %]
-[ <a href="[% conf.url_base %]/[% article.key %]">[% article.key %]</a> ]<br />[% article.subject %]<br />
-<br />
+<p>
+   [ <a href="[% conf.url_base %]/[% article.key %]">[% article.key %]</a> ]<br />[% article.subject %]
+</p>
 [% END %]
 <p>
 <a href="http://validator.w3.org/check?uri=referer"><img
