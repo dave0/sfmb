@@ -60,8 +60,10 @@ for( path_info() ) {
 
 print header,
 	top({ 
-		conf => $conf,
-		article_title => $articles->{ $article_keys[0] }->{subject}
+		conf  => $conf,
+		title => (scalar(@article_keys) == 1) 
+		            ? $articles->{ $article_keys[0] }->{subject} . " - $conf->{title}"
+			    : $conf->{title},
 	}),
 	sidebar({ 
 		conf => $conf, 
@@ -177,7 +179,7 @@ __TT__
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <head>
-    <title>[% article_title ? article_title : conf.title %]</title>
+    <title>[% title %]</title>
     <meta name="ICBM" content="[% conf.meta.ICBM %]" /> 
     <meta name="geo.region" content="[% conf.meta.geo.region %]" /> 
     <meta name="geo.placename" content="[% conf.meta.geo.placename %]" /> 
