@@ -39,29 +39,41 @@ for( path_info() ) {
 }
 
 
-my $articles = Article->list( $conf );
-my @article_keys = reverse sort grep { /^\d{14}$/ } keys %$articles;
+my %articles = %{Article->list( $conf )};
+my @all_articles = reverse sort grep { /^\d{14}$/ } keys %articles;
+my %tagged_articles;
+foreach my $key ( @all_articles ) {
+	foreach my $tag ( $articles{$key}->tags ) {
+		$tagged_articles{$tag} = () unless exists $tagged_articles{$key};
+		push @{$tagged_articles{$tag}}, $key;
+	}
+}
+my @current_articles;
 
 for( path_info() ) {
+
+	# Produce feed
 	m!/feed.xml$! && do {
-		my $latest = $article_keys[0];
+		my $latest = $all_articles[0];
 		# TODO: handle Conditional GET by checking ETag and Last-Modified: headers and return 304 if no change
 		print header(
 			  -type => 'application/rss+xml',
 			  -etag => qq{"$latest"},
-			  -last_modified => strftime("%a, %d %b %Y %H:%M:%S %Z", (gmtime($articles->{$latest}->{mtime}))),
-			  -whatever => $articles->{$latest}{mtime},
+			  -last_modified => strftime("%a, %d %b %Y %H:%M:%S %Z", (gmtime($articles{$latest}->{mtime}))),
+			  -whatever => $articles{$latest}{mtime},
 		      ),
 		      xml_articles({ 
 				conf => $conf, 
-				articles => [ map { $articles->{$_} } @article_keys ]
+				articles => [ @articles{ @all_articles } ]
 		});
 		exit(0);
 	};
-	m!/([^/]+)$! && do {
-		my $key = $1;
-		if( exists $articles->{$key} ) {
-			@article_keys = ( $key );
+
+	# Handle tags
+	m!/tag/([^/]+)$! && do {
+		my $tag = $1;
+		if( exists $tagged_articles{$tag} ) {
+			@current_articles = @{ $tagged_articles{ $tag } };
 			last;
 		}
 		print header(
@@ -71,22 +83,41 @@ for( path_info() ) {
 		exit(0);
 	};
 
+
+	# Handle single article
+	m!/([^/]+)$! && do {
+		my $key = $1;
+		if( exists $articles{$key} ) {
+			@current_articles = ( $key );
+			last;
+		}
+		print header(
+			-type   => 'text/html',
+			-status => '404 File Not Found' ),
+		      error_404( { conf => $conf, entry_name => $_ } );
+		exit(0);
+	};
+
+	# Handle list page by default
+	@current_articles = @all_articles;
+
 }
 
 print header,
 	top({ 
 		conf  => $conf,
-		title => (scalar(@article_keys) == 1) 
-		            ? $articles->{ $article_keys[0] }->{subject} . " - $conf->{title}"
+		title => (scalar(@current_articles) == 1) 
+		            ? $articles{ $current_articles[0] }->{subject} . " - $conf->{title}"
 			    : $conf->{title},
 	}),
 	sidebar({ 
-		conf => $conf, 
-		articles => [ map { $articles->{$_} } reverse sort keys %$articles ]
+		conf     => $conf, 
+		articles => [ @articles{ @all_articles } ],
+		tags     => [ keys %tagged_articles ]
 	}),
 	articles({ 
-		conf => $conf, 
-		articles => [ map { $articles->{$_} } @article_keys ]
+		conf     => $conf, 
+		articles => [ @articles{ @current_articles } ]
 	}),
 	bottom({});
 
@@ -192,6 +223,14 @@ sub formatted_body
 	    if exists $formats->{$self->{'content-type'}};
 }
 
+sub tags
+{
+	my ($self) = @_;
+	if( exists $self->{tags} ) {
+		return split(/,/,$self->{tags});
+	}
+}
+
 package main;
 
 __DATA__
@@ -222,7 +261,12 @@ __TT__
 [% USE date %]
 <div class='article'>
   <h2>[% article.subject %]</h2>
-  <h4> [ link: <a href='[% conf.url_base %]/[% article.alias ? article.alias : article.key %]'>[% article.alias ? article.alias : article.key %]</a> | updated: [% date.format(article.mtime, '%a, %d  %b  %Y  %H:%M:%S  %z') %] ]</h4>
+  <h4>[ link: <a href='[% conf.url_base %]/[% article.alias ? article.alias : article.key %]'>[% article.alias ? article.alias : article.key %]</a> 
+  | tags:
+  [% FOREACH tag = article.tags %]
+      <a href='[% conf.url_base %]/tag/[% tag %]'>[% tag %]</a>
+  [% END %]
+  | updated: [% date.format(article.mtime, '%a, %d  %b  %Y  %H:%M:%S  %z') %] ]</h4>
   <div class='article_body'>
 	[% article.formatted_body ? article.formatted_body : article.body %]
   </div>
@@ -239,6 +283,14 @@ __TT__
 
 [% BLOCK sidebar %]
 <div id="sidebar">
+<h3>Tags</h3>
+[% FOREACH tag = tags %]
+<p>
+   <a href="[% conf.url_base %]/tag/[% tag %]">[% tag %]</a>
+</p>
+[% END %]
+
+<h3>Posts</h3>
 [% FOREACH article = articles %]
 <p>
    [ <a href="[% conf.url_base %]/[% article.key %]">[% article.key %]</a> ]<br />[% article.subject %]
