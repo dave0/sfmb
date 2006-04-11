@@ -4,6 +4,7 @@ use warnings;
 use CGI qw( :standard );
 use IO::File;
 use File::Find::Rule;
+use POSIX qw( strftime );
 
 use Inline TT => 'DATA';
 
@@ -43,7 +44,14 @@ my @article_keys = reverse sort grep { /^\d{14}$/ } keys %$articles;
 
 for( path_info() ) {
 	m!/feed.xml$! && do {
-		print header('application/rss+xml'),
+		my $latest = $article_keys[0];
+		# TODO: handle Conditional GET by checking ETag and Last-Modified: headers and return 304 if no change
+		print header(
+			  -type => 'application/rss+xml',
+			  -etag => qq{"$latest"},
+			  -last_modified => strftime("%a, %d %b %Y %H:%M:%S %Z", (gmtime($articles->{$latest}->{mtime}))),
+			  -whatever => $articles->{$latest}{mtime},
+		      ),
 		      xml_articles({ 
 				conf => $conf, 
 				articles => [ map { $articles->{$_} } @article_keys ]
@@ -56,13 +64,13 @@ for( path_info() ) {
 			@article_keys = ( $key );
 			last;
 		}
+		print header(
+			-type   => 'text/html',
+			-status => '404 File Not Found' ),
+		      error_404( { conf => $conf, entry_name => $_ } );
+		exit(0);
 	};
 
-	print header(
-		-type   => 'text/html',
-		-status => '404 File Not Found' ),
-	      error_404( { conf => $conf, entry_name => $_ } );
-	exit(0);
 }
 
 print header,
