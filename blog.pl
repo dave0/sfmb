@@ -227,7 +227,7 @@ sub tags
 {
 	my ($self) = @_;
 	if( exists $self->{tags} ) {
-		return split(/,/,$self->{tags});
+		return split(/\s*,\s*/,$self->{tags});
 	}
 }
 
