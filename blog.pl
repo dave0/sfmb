@@ -27,6 +27,7 @@ my $conf = {
 	}
 };
 
+
 # Check for CSS first before reading article files
 for( path_info() ) {
 	m!/blog.css$! && do {
@@ -38,16 +39,9 @@ for( path_info() ) {
 
 
 my $articles = Article->list( $conf );
-my @article_keys = reverse sort keys %$articles;
+my @article_keys = reverse sort grep { /^\d{14}$/ } keys %$articles;
 
 for( path_info() ) {
-	m!/(\d{14})$! && do {
-		my $key = $1;
-		if( exists $articles->{$key} ) {
-			@article_keys = ( $key );
-		}
-		last;
-	};
 	m!/feed.xml$! && do {
 		print header('application/rss+xml'),
 		      xml_articles({ 
@@ -56,6 +50,19 @@ for( path_info() ) {
 		});
 		exit(0);
 	};
+	m!/([^/]+)$! && do {
+		my $key = $1;
+		if( exists $articles->{$key} ) {
+			@article_keys = ( $key );
+			last;
+		}
+	};
+
+	print header(
+		-type   => 'text/html',
+		-status => '404 File Not Found' ),
+	      error_404( { conf => $conf, entry_name => $_ } );
+	exit(0);
 }
 
 print header,
@@ -154,7 +161,14 @@ sub list
 		$find->mtime( '<=' . DateTime->now->epoch);
 	}
 
-	return { map { my $a = $class->new({filename => $_}); ($a->{key}, $a) } $find->in( $args->{data_dir}) };
+	my %articles;
+	foreach ( $find->in($args->{data_dir}) ) {
+		my $a = $class->new({filename => $_}); 
+		$articles{$a->{key}}   = $a;
+		$articles{$a->{alias}} = $a if exists $a->{alias};
+	}
+
+	return \%articles;
 }
 
 sub formatted_body 
@@ -200,7 +214,7 @@ __TT__
 [% USE date %]
 <div class='article'>
   <h2>[% article.subject %]</h2>
-  <h4> [ link: <a href='[% conf.url_base %]/[% article.key %]'>[% article.key %]</a> | updated: [% date.format(article.mtime, '%a, %d  %b  %Y  %H:%M:%S  %z') %] ]</h4>
+  <h4> [ link: <a href='[% conf.url_base %]/[% article.alias ? article.alias : article.key %]'>[% article.alias ? article.alias : article.key %]</a> | updated: [% date.format(article.mtime, '%a, %d  %b  %Y  %H:%M:%S  %z') %] ]</h4>
   <div class='article_body'>
 	[% article.formatted_body ? article.formatted_body : article.body %]
   </div>
@@ -315,4 +329,14 @@ h4 {
     [% END %]
   </channel>
 </rss>
+[% END %]
+
+[% BLOCK error_404 %]
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<HTML><HEAD>
+<TITLE>404 Not Found</TITLE>
+</HEAD><BODY>
+<H1>Not Found</H1>
+The blog entry [% entry_name | html_entity %] was not found.
+</BODY></HTML>
 [% END %]
