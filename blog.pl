@@ -181,24 +181,17 @@ sub list
 {
 	my ($class, $args) = @_;
 
+	$args->{date_start} ||= DateTime->now->subtract( months => 6)->epoch;
+	$args->{date_end}   ||= DateTime->now->epoch;
+
 	my $find = File::Find::Rule->new()
 	   ->file
 	   ->nonempty
 	   ->readable
 	   ->maxdepth(1)
-	   ->name( qr/^\d{14}$/ );
-	
-	if( exists $args->{date_start} ) {
-		$find->mtime( '>=' .  $args->{date_start}->epoch );
-	} else {
-		$find->mtime( '>=' . DateTime->now->subtract( months => 6)->epoch);
-	}
-	
-	if( exists $args->{date_end} ) {
-		$find->mtime( '<=' .  $args->{date_end}->epoch );
-	} else {
-		$find->mtime( '<=' . DateTime->now->epoch);
-	}
+	   ->name( qr/^\d{14}$/ )
+	   ->mtime( '>=' .  $args->{date_start} )
+	   ->mtime( '<=' .  $args->{date_end} );
 
 	my %articles;
 	foreach ( $find->in($args->{data_dir}) ) {

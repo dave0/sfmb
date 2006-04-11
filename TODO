@@ -11,3 +11,7 @@ DONE 3) Allow tags in a Tags: header
 
 DONE 4) Allow nice link names via Alias: header
 	< bartman> and article alias names for the YYYYMMDDHHMMSS given in entries/* Alias:
+
+5) Allow history.  Right now we ignore anything older than 6 months, and
+   display everything else.  What we should do is allow viewing on a per-month
+   basis.
