@@ -44,7 +44,7 @@ my @all_articles = reverse sort grep { /^\d{14}$/ } keys %articles;
 my %tagged_articles;
 foreach my $key ( @all_articles ) {
 	foreach my $tag ( $articles{$key}->tags ) {
-		$tagged_articles{$tag} = () unless exists $tagged_articles{$key};
+		$tagged_articles{$tag} = () unless exists $tagged_articles{$tag};
 		push @{$tagged_articles{$tag}}, $key;
 	}
 }
