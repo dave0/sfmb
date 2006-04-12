@@ -287,9 +287,7 @@ __TT__
 <div id="sidebar">
 <h3>Tags</h3>
 [% FOREACH tag = tags %]
-<p>
    <a href="[% conf.url_base %]/tag/[% tag %]">[% tag %]</a>
-</p>
 [% END %]
 
 <h3>Posts</h3>
