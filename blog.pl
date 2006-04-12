@@ -70,10 +70,12 @@ for( path_info() ) {
 	};
 
 	# Handle tags
-	m!/tag/([^/]+)$! && do {
-		my $tag = $1;
+	m!/(r?)tag/([^/]+)$! && do {
+		my $reversed = $1;
+		my $tag = $2;
 		if( exists $tagged_articles{$tag} ) {
 			@current_articles = @{ $tagged_articles{ $tag } };
+			@current_articles = reverse @current_articles if $reversed;
 			last;
 		}
 		print header(
