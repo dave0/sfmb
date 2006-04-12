@@ -39,7 +39,11 @@ for( path_info() ) {
 }
 
 
-my %articles = %{Article->list( $conf )};
+my %articles = %{Article->load_many({
+	data_dir => $conf->{data_dir}
+}) };
+
+
 my @all_articles = reverse sort grep { /^\d{14}$/ } keys %articles;
 my %tagged_articles;
 foreach my $key ( @all_articles ) {
@@ -53,7 +57,7 @@ my @current_articles;
 for( path_info() ) {
 
 	# Produce feed
-	m!/feed.xml$! && do {
+	m!^/feed.xml$! && do {
 		my $latest = $all_articles[0];
 		# TODO: handle Conditional GET by checking ETag and Last-Modified: headers and return 304 if no change
 		print header(
@@ -70,7 +74,7 @@ for( path_info() ) {
 	};
 
 	# Handle tags
-	m!/tag/([^/]+)$! && do {
+	m!^/tag/([^/]+)$! && do {
 		my $tag = $1;
 		if( exists $tagged_articles{$tag} ) {
 			@current_articles = @{ $tagged_articles{ $tag } };
@@ -83,9 +87,35 @@ for( path_info() ) {
 		exit(0);
 	};
 
+	# Handle date-based searches
+	m!^/date/(\d{4})/?(\d{2})?/?(\d{2})?$! && do {
+		my ($yy,$mm,$dd) = ($1,$2,$3);
+		
+		my %what = defined $dd ? ( days   => 1 )
+			 : defined $mm ? ( months => 1 )
+			 :               ( years  => 1 );
+		my $dur   = DateTime::Duration->new( %what );
+
+		$mm ||= 1;
+		$dd ||= 1;
+		my $start = DateTime->new( year => $yy, month => $mm, day => $dd );
+		$start->set_time_zone( $conf->{timezone} );
+		
+		my $extra = Article->load_many({
+			data_dir   => $conf->{data_dir},
+			date_start => $start->epoch,
+			date_end   => ($start + $dur)->epoch,
+		});
+		
+		@current_articles = grep { /^\d{14}$/ } keys %$extra;
+		for my $key ( @current_articles ) { 
+			$articles{$key} = $extra->{$key} unless exists $articles{$key};
+		}
+		last;
+	};
 
 	# Handle single article
-	m!/([^/]+)$! && do {
+	m!^/([^/]+)$! && do {
 		my $key = $1;
 		if( exists $articles{$key} ) {
 			@current_articles = ( $key );
@@ -105,15 +135,18 @@ for( path_info() ) {
 
 print header,
 	top({ 
-		conf  => $conf,
-		title => (scalar(@current_articles) == 1) 
+		conf    => $conf,
+		title   => (scalar(@current_articles) == 1) 
 		            ? $articles{ $current_articles[0] }->{subject} . " - $conf->{title}"
 			    : $conf->{title},
+		current => path_info(),
 	}),
 	sidebar({ 
 		conf     => $conf, 
 		articles => [ @articles{ @all_articles } ],
-		tags     => [ keys %tagged_articles ]
+		tags     => [ 
+			map +{ name => $_, weight => scalar @{$tagged_articles{$_}} }, keys %tagged_articles
+		]
 	}),
 	articles({ 
 		conf     => $conf, 
@@ -180,6 +213,20 @@ sub load
 sub list
 {
 	my ($class, $args) = @_;
+	my $find = File::Find::Rule->new()
+	   ->file
+	   ->nonempty
+	   ->readable
+	   ->maxdepth(1)
+	   ->name( qr/^\d{14}$/ )
+	   ->mtime( '<=' .  time() );
+
+	return $find->in($args->{data_dir});
+}
+
+sub load_many
+{
+	my ($class, $args) = @_;
 
 	$args->{date_start} ||= DateTime->now->subtract( months => 6)->epoch;
 	$args->{date_end}   ||= DateTime->now->epoch;
@@ -242,6 +289,7 @@ __TT__
   </head>
   <body>
     <h1><a href="[% conf.url_base %]">[% conf.title %]</a></h1>
+    [% IF current %]<h4>Now viewing: <a href="[% conf.url_base %]/[% current %]">[% current %]</a></h4>[% END %]
 [% END %]
 
 [% BLOCK bottom %]
@@ -278,9 +326,7 @@ __TT__
 <div id="sidebar">
 <h3>Tags</h3>
 [% FOREACH tag = tags %]
-<p>
-   <a href="[% conf.url_base %]/tag/[% tag %]">[% tag %]</a>
-</p>
+<span style='font-size: [% tag.weight + 10 %]pt'><a href="[% conf.url_base %]/tag/[% tag.name %]">[% tag.name %]</a></span>
 [% END %]
 
 <h3>Posts</h3>
@@ -311,7 +357,7 @@ body {
 	padding-right: 6%;
 }
 
-h1, h2 { 
+h1, h2, h3 { 
 	font-family: lucida, verdana, helvetica, arial, sans-serif;
 	font-style: normal;
 	font-variant: normal;
@@ -334,12 +380,21 @@ h2 {
 	margin-bottom: 0;
 }
 
+#sidebar h3 {
+	font-size: 12pt;
+	margin-left: -10px;
+	margin-bottom: 0;
+}
+
 h4 {
 	margin-top: 0;
 	font-size: 10pt;
 	font-weight: normal;
-	background-color: #ffffee;
 	text-align: right;
+}
+
+.article h4 {
+	background-color: #ffffee;
 }
 
 .content {
