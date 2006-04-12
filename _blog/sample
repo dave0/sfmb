@@ -1,6 +1,21 @@
-Subject: subject
-Content-Type: text/plain
+Subject: some subject
+Content-Type: text/x-markdown
+Alias: what-to-display-in-url
+Tags: tag1,tag2,tag3
 
-body can contain html if the first non space char is a < or if 
-Content-Type is 'text/html
+1. Subject: is the title of the blog.
+
+2. Content-Type: defines the type of encoding used in the article source.
+
+    There are three encoding types supported:
+
+     - text/plain
+     - text/html
+     - text/x-markdown
+
+    If not supplied but the first characters is a <, it becomes text/html.
+
+3. Alias: defines the name that will be used for naming the article's perma-link.
+
+4. Tags: is a comma separated list of tags that are associated with the article.
 
