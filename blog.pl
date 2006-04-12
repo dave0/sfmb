@@ -210,6 +210,15 @@ sub load
 			$self->{'content-type'} = 'text/plain';
 		}
 	}
+
+        if ($self->{'content-type'} = 'text/x-markdown') {
+
+                my $base = $conf->{url_base};
+
+                # convert [text]{anything} to [text]($url_base/anything) which
+                # makes markdown generate <a href=$url_base/anything>text</a>
+                $self->{body} =~ s!(\[[^\]]+\])\{([^\}]+)\}!\1($base/\2)!g;
+        }
 }
 
 sub list
