@@ -336,14 +336,24 @@ __TT__
 </p>
 [% END %]
 <p>
+<a href="[% conf.url_base %]/feed.xml"><img
+      src="/img/rss_fullposts.png"
+      alt="RSS Feed - Full Content" height="15" width="80" border="0"/></a>
+</p>
+<p>
 <a href="http://validator.w3.org/check?uri=referer"><img
-      src="http://www.w3.org/Icons/valid-xhtml10"
-      alt="Valid XHTML 1.0 Transitional" height="31" width="88" border="0"/></a>
+      src="/img/valid_xhtml10.png"
+      alt="Valid XHTML 1.0 Transitional" height="15" width="80" border="0"/></a>
 </p>
 <p>
 <a href="http://www.vim.org"><img
-      src="/images/vim/vim_created.gif"
-      alt="Created with Vim" height="36" width="90" border="0"/></a>
+      src="/img/vim_the_editor.png"
+      alt="Created with Vim" height="15" width="80" border="0"/></a>
+</p>
+<p>
+<a href="http://www.perl.org"><img
+      src="/img/perl.png"
+      alt="Created with Perl" height="15" width="80" border="0"/></a>
 </p>
 </div>
 [% END %]
