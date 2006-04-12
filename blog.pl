@@ -291,7 +291,7 @@ __TT__
   </head>
   <body>
     <h1><a href="[% conf.url_base %]">[% conf.title %]</a></h1>
-    [% IF current %]<h4>Now viewing: <a href="[% conf.url_base %]/[% current %]">[% current %]</a></h4>[% END %]
+    [% IF current %]<h4>Now viewing: <a href="[% conf.url_base %][% current %]">[% current %]</a></h4>[% END %]
 [% END %]
 
 [% BLOCK bottom %]
