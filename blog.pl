@@ -14,6 +14,10 @@ my $conf = {
 	timezone => 'Canada/Eastern',
 	url_base => script_name(),
 	host_name => virtual_host(),
+
+	# fix me: don't know how to pass the fact that we are viewing one
+	# article into formatted_body()
+	hack_single => 0,
 	
 	meta      => {
 
@@ -121,6 +125,7 @@ for( path_info() ) {
 		my $key = $1;
 		if( exists $articles{$key} ) {
 			@current_articles = ( $key );
+			$conf->{hack_single} = 1;
 			last;
 		}
 		print header(
@@ -270,8 +275,21 @@ sub formatted_body
 		'text/x-markdown' => sub { return markdown($_[0]) },
 	};
 
-	return $formats->{$self->{'content-type'}}->($self->{body})
+	my $out = $formats->{$self->{'content-type'}}->($self->{body})
 	    if exists $formats->{$self->{'content-type'}};
+
+	# convert ^<read-more>$ and everything that follows 
+	# to a Read More link
+	if (not $conf->{hack_single}) {
+                my $base = $conf->{url_base};
+		my $key  = $self->{alias} ? $self->{alias} : $self->{key};
+		my $link = "<a href=$base/$key>[Read More]</a>";
+		$out =~ s!((<br>|<p>))\s*<read-more>\s*((<br>|</p>)).*$!\n$1$link$2!s;
+	} else {
+		$out =~ s!(<br>|<p>)\s*<read-more>\s*(<br>|</p>)!\n!s;
+	}
+
+	return $out;
 }
 
 sub tags
