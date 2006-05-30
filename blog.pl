@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use warnings;
+use English qw( -no_match_vars );
 use CGI qw( :standard );
 use IO::File;
 use File::Find::Rule;
@@ -31,6 +32,23 @@ my $conf = {
 		},
 	}
 };
+
+if( scalar @ARGV ) {
+	eval "use Getopt::Long";
+	if( $EVAL_ERROR ) {
+		die q{Commandline mode needs Getopt::Long, but it was not found};
+	}
+
+	my ($preview, $render);
+	my $result = GetOptions ( "preview=s" => \$preview,
+	                          "render=s"  => \$render, );
+
+	if( $preview ) {
+		die q{preview not written yet.  bug dmo.}
+	} elsif( $render ) {
+		path_info( $render );
+	}
+}
 
 
 # Check for CSS first before reading article files
