@@ -318,7 +318,8 @@ sub tags
 {
 	my ($self) = @_;
 	if( exists $self->{tags} ) {
-		return split(/\s*,\s*/,$self->{tags});
+		my %unique;
+		return grep { ++$unique{$_} == 1 } split(/\s*,\s*/,$self->{tags});
 	}
 }
 
