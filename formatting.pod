@@ -1,0 +1,69 @@
+=head1 Blog Entry Formatting
+
+Basically, blog entries are formatted like an email message. You have
+a header section, in the format of
+
+Name: value
+
+followed by a blank line, and then the body of the message.
+
+=head1 Headers
+
+=head2 Subject:
+
+A blog entry should have, at minimum, a Subject: header.  This will be
+used as the title of your blog post.
+
+Other headers are optional, and include:
+
+=head2 Content-Type:
+
+This is the MIME type of your article.  Your choices at this point are:
+	text/plain
+	text/html
+	text/x-markdown
+
+text/plain is rendered as-is, as plain text.  text/html may contain
+HTML.  text/x-markdown is formatted in the simple markup language
+Markdown (http://daringfireball.net/projects/markdown/).
+
+If no Content-Type header is present, we will try to autodetect it.  If
+the body begins with a < character, we assume text/html, otherwise we
+assume text/plain.
+
+=head2 Alias:
+
+This provides a value for a permanent link.  If not present, the filename of
+the article will be used.
+
+An example:
+
+        Alias: bad-day-at-the-office
+
+will have a permalink of
+
+	http://www.yourdomain.tld/blog/bad-day-at-the-office
+
+instead of
+
+	http://www.yourdomain.tld/blog/20060630074132
+
+=head2 Tags:
+
+A comma-separated list of tag keywords. 
+
+An example:
+
+	Tags: vim, perl, blog
+
+Tags are optional.
+
+=head1 Inline options
+
+=head2 <read more>
+
+Inserting a <read more> tag inside the body of your post will let vimblog
+display only the text up to that point on the index page, followed by a 'read
+more' link to the full article.
+
+This should work for all content-type: options.
