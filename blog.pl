@@ -43,8 +43,12 @@ if( scalar @ARGV ) {
 	my $result = GetOptions ( "preview=s" => \$preview,
 	                          "render=s"  => \$render, );
 
+	if( ! $result ) {
+		die q{invalid arguments};
+	}
+
 	if( $preview ) {
-		die q{preview not written yet.  bug dmo.}
+		die q{preview not written yet.  bug dmo.};
 	} elsif( $render ) {
 		path_info( $render );
 	}
