@@ -19,6 +19,9 @@ my $conf = {
 	# fix me: don't know how to pass the fact that we are viewing one
 	# article into formatted_body()
 	hack_single => 0,
+
+	# Maximum number of articles per page.  0 disables pagination
+	articles_per_page => 10,
 	
 	meta      => {
 
@@ -79,6 +82,11 @@ foreach my $key ( @all_articles ) {
 	}
 }
 my @current_articles;
+
+# Handle pagination
+my $current_page = param('page') || 1;
+$current_page =~ s/[^\d]//g; # sanitize.
+
 
 for( path_info() ) {
 
@@ -159,6 +167,26 @@ for( path_info() ) {
 
 	# Handle list page by default
 	@current_articles = @all_articles;
+	
+}
+
+if( $conf->{articles_per_page} ) {
+	
+	# Slight hack...
+	$conf->{total_matching_articles} = scalar @current_articles;
+	$conf->{prev_article_count} = ($current_page - 1) * $conf->{articles_per_page};
+
+	# Technically, this would be best done with an array slice, but
+	# splice() is so much cleaner and more readable than mucking about with
+	# @stuff[$foo .. $bar]
+	@current_articles = splice(
+		@current_articles,
+		$conf->{prev_article_count},
+		$conf->{articles_per_page});
+
+	# Slight hack...
+	$conf->{articles_on_page} = scalar @current_articles;
+	$conf->{next_article_count} = $conf->{total_matching_articles} - ($conf->{articles_on_page} + (($current_page - 1) * $conf->{articles_per_page}));
 
 }
 
@@ -169,6 +197,8 @@ print header,
 		            ? $articles{ $current_articles[0] }->{subject} . " - $conf->{title}"
 			    : $conf->{title},
 		current => path_info(),
+		prev_page => ($conf->{prev_article_count} > 0) ? $current_page - 1 : 0,
+		next_page => ($conf->{next_article_count} > 0) ? $current_page + 1 : 0,
 	}),
 	sidebar({ 
 		conf     => $conf, 
@@ -341,7 +371,11 @@ __TT__
   </head>
   <body>
     <h1><a href="[% conf.url_base %]">[% conf.title %]</a></h1>
-    [% IF current %]<h4>Now viewing: <a href="[% conf.url_base %][% current %]">[% current %]</a></h4>[% END %]
+    <div id="navbar">
+    [% IF prev_page %]<a id="prev" href="[% conf.url_base %][% current %]?page=[% prev_page %]" title="See previous [% conf.articles_per_page %] (of [% conf.prev_article_count %] before this one)">&laquo;</a>[% END %]
+    [% IF current %]<a id="current" href="[% conf.url_base %][% current %]">[% current %]</a></h4>[% END %]
+    [% IF next_page %]<a id="next" href="[% conf.url_base %][% current %]?page=[% next_page %]" title="See next [% (conf.articles_per_page > conf.next_article_count) ? conf.next_article_count : conf.articles_per_page %] (of [% conf.next_article_count %] after this one)">&raquo;</a>[% END %]
+    </div>
 [% END %]
 
 [% BLOCK bottom %]
@@ -442,17 +476,47 @@ h2 {
 	margin-bottom: 0;
 }
 
+h4 {
+	margin-top: 0;
+	font-size: 10pt;
+	font-weight: normal;
+	text-align: right;
+}
+
+#sidebar {
+	float: left;
+	width: 160px;
+	margin: 0;
+	padding: 1em;
+}
+
 #sidebar h3 {
 	font-size: 12pt;
 	margin-left: -10px;
 	margin-bottom: 0;
 }
 
-h4 {
+#navbar {
 	margin-top: 0;
+	margin-left: 200px;
+	text-align: right;
+}
+
+#navbar #current {
 	font-size: 10pt;
 	font-weight: normal;
-	text-align: right;
+}
+
+#navbar #prev {
+	text-decoration: none;
+	font-size: 14pt;
+	font-weight: normal;
+}
+
+#navbar #next {
+	text-decoration: none;
+	font-size: 14pt;
+	font-weight: normal;
 }
 
 .article h4 {
@@ -465,13 +529,6 @@ h4 {
 
 .article_body {
 	padding-left: 20px;
-}
-
-#sidebar {
-	float: left;
-	width: 160px;
-	margin: 0;
-	padding: 1em;
 }
 
 
