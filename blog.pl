@@ -538,14 +538,14 @@ h4 {
 [% USE date %]
 <rss version="0.92" xml:base="[% conf.url_base %]">
   <channel>
-    <title>[% conf.title %]</title>
+    <title>[% conf.title | html_entity %]</title>
     <link>http://[% conf.host_name %][% conf.url_base %]</link>
     <description></description>
     <language>en</language>
 
     [% FOREACH item = articles %]
     <item>
-      <title>[% item.subject %]</title>
+      <title>[% item.subject | html_entity %]</title>
       <link>http://[% conf.host_name %][% conf.url_base %]/[% item.key %]</link>
       <description>
 	<![CDATA[ [% item.formatted_body ? item.formatted_body : item.body %]
