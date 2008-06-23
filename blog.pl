@@ -547,6 +547,9 @@ h4 {
     <item>
       <title>[% item.subject | html_entity %]</title>
       <link>http://[% conf.host_name %][% conf.url_base %]/[% item.key %]</link>
+      [% FOREACH tag = item.tags %]
+          <category>[% tag %]</category>
+      [% END %]
       <description>
 	<![CDATA[ [% item.formatted_body ? item.formatted_body : item.body %]
       ]]></description>
