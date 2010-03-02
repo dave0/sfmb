@@ -3,5 +3,5 @@
 DIR=entries
 LAST=`ls -t $DIR/* | grep "^$DIR/[0-9]\+$" | head -n1`
 
-vim $LAST
+$EDITOR $LAST
 

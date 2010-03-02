@@ -62,7 +62,7 @@ Tags are optional.
 
 =head2 <read more>
 
-Inserting a <read more> tag inside the body of your post will let vimblog
+Inserting a <read more> tag inside the body of your post will let blog.pl
 display only the text up to that point on the index page, followed by a 'read
 more' link to the full article.
 

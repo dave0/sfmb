@@ -432,11 +432,6 @@ __TT__
       alt="Valid XHTML 1.0 Transitional" height="15" width="80" border="0"/></a>
 </p>
 <p>
-<a href="http://www.vim.org"><img
-      src="/img/vim_the_editor.png"
-      alt="Created with Vim" height="15" width="80" border="0"/></a>
-</p>
-<p>
 <a href="http://www.perl.org"><img
       src="/img/perl.png"
       alt="Created with Perl" height="15" width="80" border="0"/></a>

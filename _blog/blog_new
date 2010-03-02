@@ -8,6 +8,6 @@ FILE="$ENTR/$DATE"
 
 cp "$BLOG/template" "$FILE"
 chmod 600 "$FILE"
-vim "$FILE"
+$EDITOR "$FILE"
 chmod 644 "$FILE"
 
