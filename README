@@ -1,0 +1,40 @@
+sfmb - Single File Markdown Blog
+================================
+
+This is a quick and dirty blog script, written with the following requirements:
+
+   1. One file
+   1. Posting via text files with minimal markup
+
+It is likely not suitable for high-traffic implementations, as it runs as a
+Perl CGI.  It is also not suitable if you want commenting, web-based posting,
+etc.  In fact, it's probably not suitable for much, which is why I no longer
+use it, but YMMV.
+
+Usage
+-----
+
+Clone the repository.  Then:
+
+  cp _blog ~/.blog
+  cp blog.pl /var/www/some/cgi/directory
+
+and you're deployed.
+
+Of course, it will have no posts and look ugly as sin, as the defaults are
+horrible and likely point to the wrong paths.  So....
+
+    mkdir ~/.blog/entries
+    ~/.blog/blog_new
+
+and compose an entry in your editor.
+
+Then:
+
+    $EDITOR /var/www/some/cgi/directory/blog.pl
+
+and modify the `$conf` section appropriately.  You will at minimum want to
+point data_dir to your $HOME/.blog/entries.
+
+Now would also be a good time to adjust templates, CSS, etc, at the bottom of
+blog.pl
