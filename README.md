@@ -12,6 +12,26 @@ use it, but YMMV.
 
 ## Usage
 
+### Prerequisites
+
+You will need the following Perl modules:
+
+  * CGI
+  * IO::File
+  * POSIX
+  * File::Basename
+  * DateTime
+  * Text::Markdown
+  * File::Find::Rule
+  * Inline
+  * Template
+  * Inline::TT
+
+The first four should be available on most Linux systems.  The remaining
+modules will likely need to be installed from CPAN.
+
+### Installation
+
 Clone the repository.  Then:
 
   cp _blog ~/.blog
