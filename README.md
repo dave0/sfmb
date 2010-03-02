@@ -110,3 +110,14 @@ display only the text up to that point on the index page, followed by a 'read
 more' link to the full article.
 
 This should work for all content-type: options.
+
+
+## Future Features
+
+These features have been requested, but are not yet implemented.  Patches welcome.
+
+   1. A configuration file.  Probably in YAML or JSON.
+   1. Previous/next article arrows
+   1. Better navigation of old content, incl. sidebar listing year/month historical entries.
+   1. External templates and CSS, rather than using inline.
+
